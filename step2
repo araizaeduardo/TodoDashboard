@@ -1,0 +1,152 @@
+#Implementar Vistas URL y Templates Basicos
+Con este código, hemos implementado:
+
+Vistas para listar, crear, editar y eliminar tareas.
+Una vista para cambiar el estado de las tareas.
+URLs para todas las funcionalidades.
+Templates básicos para mostrar el dashboard y los formularios.
+
+# En tasks/views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from .models import Task
+from .forms import TaskForm
+
+class TaskListView(ListView):
+    model = Task
+    template_name = 'tasks/task_list.html'
+    context_object_name = 'tasks'
+
+class TaskCreateView(CreateView):
+    model = Task
+    form_class = TaskForm
+    template_name = 'tasks/task_form.html'
+    success_url = reverse_lazy('task_list')
+
+class TaskUpdateView(UpdateView):
+    model = Task
+    form_class = TaskForm
+    template_name = 'tasks/task_form.html'
+    success_url = reverse_lazy('task_list')
+
+class TaskDeleteView(DeleteView):
+    model = Task
+    template_name = 'tasks/task_confirm_delete.html'
+    success_url = reverse_lazy('task_list')
+
+def change_task_state(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    if request.method == 'POST':
+        new_state = request.POST.get('state')
+        if new_state in dict(Task.TASK_STATES):
+            task.state = new_state
+            task.save()
+    return redirect('task_list')
+
+# En tasks/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.TaskListView.as_view(), name='task_list'),
+    path('task/new/', views.TaskCreateView.as_view(), name='task_create'),
+    path('task/<int:pk>/edit/', views.TaskUpdateView.as_view(), name='task_update'),
+    path('task/<int:pk>/delete/', views.TaskDeleteView.as_view(), name='task_delete'),
+    path('task/<int:pk>/change-state/', views.change_task_state, name='change_task_state'),
+]
+
+# En task_dashboard/urls.py
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('tasks.urls')),
+]
+
+# En tasks/forms.py
+from django import forms
+from .models import Task
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ['title', 'description', 'state']
+
+# Templates básicos
+# En tasks/templates/tasks/task_list.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Dashboard de Tareas</h1>
+  <a href="{% url 'task_create' %}">Nueva Tarea</a>
+  <div class="task-columns">
+    {% for state, state_name in task_states %}
+      <div class="task-column">
+        <h2>{{ state_name }}</h2>
+        {% for task in tasks %}
+          {% if task.state == state %}
+            <div class="task-card">
+              <h3>{{ task.title }}</h3>
+              <p>{{ task.description }}</p>
+              <a href="{% url 'task_update' task.pk %}">Editar</a>
+              <a href="{% url 'task_delete' task.pk %}">Borrar</a>
+              <form method="post" action="{% url 'change_task_state' task.pk %}">
+                {% csrf_token %}
+                <select name="state">
+                  {% for s, s_name in task_states %}
+                    <option value="{{ s }}" {% if s == task.state %}selected{% endif %}>{{ s_name }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit">Cambiar Estado</button>
+              </form>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+# En tasks/templates/tasks/task_form.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>{% if form.instance.pk %}Editar Tarea{% else %}Nueva Tarea{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+  </form>
+{% endblock %}
+
+# En tasks/templates/tasks/task_confirm_delete.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Eliminar Tarea</h1>
+  <p>¿Estás seguro de que quieres eliminar "{{ object.title }}"?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmar</button>
+  </form>
+  <a href="{% url 'task_list' %}">Cancelar</a>
+{% endblock %}
+
+# En templates/base.html (crear este archivo en la raíz del proyecto)
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Tareas</title>
+    <style>
+        /* Estilos básicos aquí */
+    </style>
+</head>
+<body>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>

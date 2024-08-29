@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Dashboard de Tareas</h1>
+  
+  <div class="tag-filter">
+    <h3>Filtrar por etiqueta:</h3>
+    {% for tag in tags %}
+      <a href="?tag={{ tag.name }}" class="tag">{{ tag.name }}</a>
+    {% endfor %}
+  </div>
+
+  <a href="{% url 'task_create' %}" class="button">Nueva Tarea</a>
+  
+  <div class="task-columns">
+    {% for state, state_name in task_states %}
+      <div class="task-column" data-state="{{ state }}">
+        <h2>{{ state_name }}</h2>
+        {% for task in tasks %}
+          {% if task.state == state %}
+            <div class="task-card" data-task-id="{{ task.id }}">
+              <h3>{{ task.title }}</h3>
+              <p>{{ task.description }}</p>
+              <div class="task-tags">
+                {% for tag in task.tags.all %}
+                  <span class="tag">{{ tag.name }}</span>
+                {% endfor %}
+              </div>
+              <div class="task-actions">
+                <a href="{% url 'task_update' task.pk %}">Editar</a>
+                <a href="{% url 'task_delete' task.pk %}">Borrar</a>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

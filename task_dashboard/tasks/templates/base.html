@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Tareas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f5f7;
+        }
+        .task-columns {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .task-column {
+            flex: 1;
+            background-color: #ebecf0;
+            border-radius: 5px;
+            padding: 10px;
+            min-height: 300px;
+        }
+        .task-card {
+            background-color: white;
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 0 rgba(9,30,66,.25);
+            cursor: move;
+        }
+        .task-card h3 {
+            margin-top: 0;
+        }
+        .task-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .task-actions a, .task-actions button {
+            padding: 5px 10px;
+            background-color: #0079bf;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+        }
+        .task-actions select {
+            padding: 5px;
+        }
+        .filter-form {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .task-tags {
+            margin-top: 5px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            margin-right: 5px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    {% block content %}{% endblock %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var columns = document.querySelectorAll('.task-column');
+            columns.forEach(function(column) {
+                new Sortable(column, {
+                    group: 'shared',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        var taskId = evt.item.getAttribute('data-task-id');
+                        var newState = evt.to.getAttribute('data-state');
+                        updateTaskState(taskId, newState);
+                    }
+                });
+            });
+        });
+
+        function updateTaskState(taskId, newState) {
+            fetch(`/task/${taskId}/change-state/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: `state=${newState}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Task state updated successfully');
+                } else {
+                    console.error('Failed to update task state');
+                }
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

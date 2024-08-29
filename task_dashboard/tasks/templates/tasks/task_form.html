@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>{% if form.instance.pk %}Editar Tarea{% else %}Nueva Tarea{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+  </form>
+{% endblock %}
+
+# Añadir estilos CSS para las etiquetas
+<style>
+  .tag-filter {
+    margin-bottom: 20px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 5px 10px;
+    margin-right: 5px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    text-decoration: none;
+    color: #333;
+  }
+  .tag:hover {
+    background-color: #e0e0e0;
+  }
+  .task-tags {
+    margin-top: 10px;
+  }
+</style>
